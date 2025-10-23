@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { format, parse, differenceInYears, isFuture } from 'date-fns';
 import { Patient } from './schemas/patient.schema';
+import { Counter } from './schemas/counter.schema';
 import { CreatePatientDto, EmergencyContactDto, InsurancePolicyDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 
@@ -10,11 +11,17 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 export class PatientsService {
   constructor(
     @InjectModel(Patient.name) private patientModel: Model<Patient>,
+    @InjectModel(Counter.name) private counterModel: Model<Counter>,
   ) {}
 
   private async generatePatientNumber(): Promise<string> {
-    const count = await this.patientModel.countDocuments();
-    const number = (count + 1).toString().padStart(8, '0');
+    const counter = await this.counterModel.findOneAndUpdate(
+      { name: 'patientNumber' },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    
+    const number = counter.seq.toString().padStart(8, '0');
     return `PAT-${number}`;
   }
 
@@ -73,10 +80,21 @@ export class PatientsService {
       };
     }
 
-    const patient = new this.patientModel(patientData);
-    const savedPatient = await patient.save();
-    
-    return this.formatPatientResponse(savedPatient);
+    try {
+      const patient = new this.patientModel(patientData);
+      const savedPatient = await patient.save();
+      return this.formatPatientResponse(savedPatient);
+    } catch (error) {
+      if (error.code === 11000) {
+        if (error.keyPattern?.patientNumber) {
+          throw new ConflictException('Error generando número de paciente único. Por favor intente nuevamente.');
+        }
+        if (error.keyPattern?.nationalId) {
+          throw new ConflictException('Ya existe un paciente con esta cédula (nationalId)');
+        }
+      }
+      throw error;
+    }
   }
 
   async findAll(search?: string, page: number = 1, limit: number = 10): Promise<any> {

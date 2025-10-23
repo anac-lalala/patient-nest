@@ -97,6 +97,24 @@ Para usar MongoDB Atlas (recomendado):
 Una vez que la aplicación esté corriendo, accede a la documentación interactiva en:
 http://localhost:5000/api
 
+## Resolución de Problemas
+
+### La aplicación no se conecta a MongoDB Atlas
+
+Si ves el error "Could not connect to any servers in your MongoDB Atlas cluster", necesitas:
+
+1. **Configurar IP Whitelist en MongoDB Atlas**:
+   - Ve a tu cluster de MongoDB Atlas
+   - Click en "Network Access" → "Add IP Address"
+   - Selecciona "Allow Access from Anywhere" (0.0.0.0/0) para permitir conexiones desde Replit
+   
+2. **Verificar credenciales**:
+   - Asegúrate de que el MONGODB_URI en Secrets tenga el formato correcto
+   - Formato: `mongodb+srv://usuario:contraseña@cluster.mongodb.net/patients-db?retryWrites=true&w=majority`
+   
+3. **Verificar permisos de usuario**:
+   - En "Database Access", el usuario debe tener rol de lectura/escritura
+
 ## Cambios Recientes
 
-**2025-10-23**: Implementación inicial del API completa con todos los endpoints y validaciones requeridas.
+**2025-10-23**: Implementación inicial del API completa con todos los endpoints y validaciones requeridas. Configurada conexión a MongoDB Atlas con manejo de errores.
